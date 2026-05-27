@@ -69,3 +69,32 @@ title('Espectro Harmônico da Configuração 3');
 xlabel('Ordem Harmônica n');
 ylabel('$|B_{\max}(n)|$', 'Interpreter', 'latex');
 xlim([0 50]);
+
+% Laminação M250
+
+% Curva B×H — interpolação com 'pchip' para garantir monotonia.
+% (Piecewise Cubic Hermite Interpolating Polynomial)
+
+% Pontos originais
+H_dados = [0, 2500, 5000, 10000];   % A/m
+B_dados = [0, 1.60, 1.70, 1.82];    % T
+
+% 20 pontos interpolados igualmente espaçados
+H_interp = linspace(0, 10000, 20);
+B_interp = interp1(H_dados, B_dados, H_interp, 'pchip');
+
+% Exibir na janela de comando
+fprintf('\n%-6s  %-12s  %-10s\n', 'Ponto', 'H (A/m)', 'B (T)');
+fprintf('%s\n', repmat('-', 1, 32));
+for i = 1:length(H_interp)
+    fprintf('%-6d  %-12.2f  %.4f\n', i, H_interp(i), B_interp(i));
+end
+
+% Gráfico
+figure;
+plot(H_dados, B_dados, 'ro', 'MarkerSize', 8, 'LineWidth', 1.5); hold on;
+plot(H_interp, B_interp, 'b.-', 'MarkerSize', 10, 'LineWidth', 1.2);
+xlabel('H (A/m)'); ylabel('B (T)');
+title('Curva B×H - Interpolação pchip');
+legend('Pontos medidos', 'Interpolado', 'Location', 'southeast');
+grid on;
