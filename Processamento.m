@@ -91,7 +91,7 @@ for i = 1:length(H_interp)
 end
 
 % Gráfico
-figure;
+figure('Name', 'Aço M250', 'NumberTitle', 'off');
 plot(H_dados, B_dados, 'ro', 'MarkerSize', 8, 'LineWidth', 1.5); hold on;
 plot(H_interp, B_interp, 'b.-', 'MarkerSize', 10, 'LineWidth', 1.2);
 xlabel('H (A/m)'); ylabel('B (T)');
