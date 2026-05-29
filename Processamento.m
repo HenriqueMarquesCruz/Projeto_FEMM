@@ -2,6 +2,7 @@ clc;
 clear;
 close all;
 
+%% ------- Letra b) -------
 % Harmônicas ímpares até n = 50
 n = 1:2:50;        
 % Harmônicas ímpares não múltiplas de 3 até n = 50
@@ -98,3 +99,43 @@ xlabel('H (A/m)'); ylabel('B (T)');
 title('Curva B×H - Interpolação pchip');
 legend('Pontos medidos', 'Interpolado', 'Location', 'southeast');
 grid on;
+
+%% ------- Letra c) -------
+
+% Dados
+E_rms = 127;
+f_e   = 60;
+P     = 6;
+r     = 115/(2*1000);
+%(115+2*18.5)/(2*1000)
+l     = 0.140;
+g     = 0.0005;
+mu0   = 4*pi*1e-7;
+B_max = 0.9;
+
+kw = [0.9659, 0.9659, 0.9330];   % configs 1, 2, 3
+
+% --- N_ph ---
+phi = (2/P) *2*l*r*B_max
+Nph = (E_rms * sqrt(2)) ./ (2*pi*f_e .* kw * (2/P) * 2*l*r*B_max);
+
+Nph1 = Nph(1);
+Nph2 = Nph(2);
+Nph3 = Nph(3);
+
+n=108;
+% --- Ia (n=1) ---
+Ia = B_max * (2/3) * (g/mu0) * (pi/4) * P ./ (kw .* n);
+
+Ia1 = Ia(1);
+Ia2 = Ia(2);
+Ia3 = Ia(3);
+
+% --- Resultados ---
+fprintf('\nNph1 = %.4f espiras\n', Nph1)
+fprintf('Nph2 = %.4f espiras\n', Nph2)
+fprintf('Nph3 = %.4f espiras\n', Nph3)
+fprintf('\n')
+fprintf('Ia1 = %.4f A, Ib1 = Ic1 = %.4f\n', Ia1, -Ia1/2)
+fprintf('Ia2 = %.4f A, Ib2 = Ic2 = %.4f\n', Ia2, -Ia2/2)
+fprintf('Ia3 = %.4f A, Ib3 = Ic3 = %.4f\n', Ia3, -Ia3/2)
