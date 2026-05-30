@@ -93,6 +93,28 @@ title('Curva B×H - Interpolação pchip');
 legend('Pontos medidos', 'Interpolado', 'Location', 'southeast');
 grid on;
 
+fprintf('\n=== Espectro harmônico teórico ===\n');
+legendas_teo = {'Configuração 1', 'Configuração 2', 'Configuração 3'};
+
+B_analitico = {B1, B2, B3};
+n_harm_teo  = 1:2:50;
+n_harm_teo  = n_harm_teo(mod(n_harm_teo,3) ~= 0);
+
+for k = 1:3
+    fprintf('\n=== %s ===\n', legendas_teo{k});
+    fprintf('%-10s %15s %15s\n', 'Harmônica', 'Absoluta [T]', 'Relativa [%]');
+    fprintf('%s\n', repmat('-', 1, 42));
+
+    fund = B_analitico{k}(n_harm_teo == 1);
+
+    for n = 1:2:13
+        if mod(n,3) == 0, continue; end
+        amp_abs = B_analitico{k}(n_harm_teo == n);
+        amp_rel = 100 * amp_abs / fund;
+        fprintf('%-10d %15.6f %15.2f\n', n, amp_abs, amp_rel);
+    end
+end
+
 %% ------- Letra c) -------
 E_rms = 127;
 f_e   = 60;
