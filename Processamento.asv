@@ -77,6 +77,8 @@ B_dados = [0, 1.60, 1.70, 1.82];    % T
 H_interp = linspace(0, 10000, 20);
 B_interp = interp1(H_dados, B_dados, H_interp, 'pchip');
 
+fprintf('\n=== Pontos BxH do aço elétrico ===\n');
+
 fprintf('\n%-6s  %-12s  %-10s\n', 'Ponto', 'H (A/m)', 'B (T)');
 fprintf('%s\n', repmat('-', 1, 32));
 for i = 1:length(H_interp)
@@ -117,6 +119,7 @@ Ia1 = Ia(1);
 Ia2 = Ia(2);
 Ia3 = Ia(3);
 
+fprintf('\n=== Quantidade de espiras e corrente por fase ===\n');
 fprintf('\nNph1 = %.4f espiras\n', Nph1)
 fprintf('Nph2 = %.4f espiras\n', Nph2)
 fprintf('Nph3 = %.4f espiras\n', Nph3)
@@ -125,7 +128,7 @@ fprintf('Ia1 = %.4f A, Ib1 = Ic1 = %.4f\n', Ia1, -Ia1/2)
 fprintf('Ia2 = %.4f A, Ib2 = Ic2 = %.4f\n', Ia2, -Ia2/2)
 fprintf('Ia3 = %.4f A, Ib3 = Ic3 = %.4f\n', Ia3, -Ia3/2)
 
-%% ------- Letra d) - Plot Bn interpolado + FFT -------
+%% ------- Letra d) - Plot Bn + FFT -------
 % ── 1. Configuracoes ───────────────────────────────────────────────────
 pasta = fullfile(fileparts(mfilename('fullpath')), 'Graficos_FEMM');
 
@@ -164,10 +167,12 @@ for k = 1:3
     ax = gca; ax.FontSize = 12;
 end
 
-sgtitle('B_n ao longo do entreferro', 'FontSize', 16);
+%sgtitle('B_n ao longo do entreferro', 'FontSize', 16);
 
-% ── 4. Figura – Espectro harmonico (3 subplots, uma por configuracao)
-figure('Name', 'Espectro Harmonico - 3 Configuracoes', 'NumberTitle', 'off');
+% ── 4. Figura – Espectro harmônico (3 subplots, uma por configuracao)
+figure('Name', 'Espectro Harmônico - 3 Configuracoes', 'NumberTitle', 'off');
+
+Y_mag_all = cell(3,1); harmonics_all = cell(3,1); half_all = cell(3,1);
 
 for k = 1:3
     B = B_all{k};
@@ -180,9 +185,13 @@ for k = 1:3
     Y     = fft(B_period);
     Y_mag = abs(Y) / N;
 
-    % Ordens harmonicas
+    % Ordens harmônicas
     harmonics = 0:(N-1);
     half      = 1:floor(N/2);
+
+    Y_mag_all{k}     = Y_mag;     % <-- adiciona
+    harmonics_all{k} = harmonics; % <-- adiciona
+    half_all{k}      = half;      % <-- adiciona
 
     subplot(3, 1, k);
     stem(harmonics(half), 2*Y_mag(half), ...
@@ -198,4 +207,65 @@ for k = 1:3
     ax = gca; ax.FontSize = 12;
 end
 
-sgtitle('Espectro harmônico de B_n', 'FontSize', 16);
+%sgtitle('Espectro harmônico de B_n', 'FontSize', 16);
+
+fprintf('\n=== Espectro harmônico  ===\n');
+% ── harmônicos ímpares – amplitude absoluta e relativa ────────────────
+for k = 1:3
+    B = B_all{k};
+    N        = floor(length(B) / 3);
+    B_period = B(1:N);
+
+    Y     = fft(B_period);
+    Y_mag = 2 * abs(Y) / N;   
+
+    fund = Y_mag(2);           % ordem 1 (índice 2 em MATLAB)
+
+    fprintf('\n=== %s ===\n', legendas{k});
+    fprintf('%-10s %15s %15s\n', 'Harmônica', 'Absoluta [T]', 'Relativa [%]');
+    fprintf('%s\n', repmat('-', 1, 42));
+
+    for n = 1:2:13             % ímpares: 1, 3, 5, ... 49
+        amp_abs = Y_mag(n + 1);          % índice n+1 para ordem n
+        amp_rel = 100 * amp_abs / fund;
+        fprintf('%-10d %15.6f %15.2f\n', n, amp_abs, amp_rel);
+    end
+end
+
+% ── 5. Figura – Espectros sobrepostos ─────────────────────────────────
+figure('Name', 'Espectros Sobrepostos - 3 Configuracoes', 'NumberTitle', 'off');
+hold on;
+
+for k = 1:3
+    stem(harmonics_all{k}(half_all{k}), Y_mag_all{k}(half_all{k}), ...
+        'filled', 'LineWidth', 1.5, ...
+        'Color', cores{k}, 'MarkerFaceColor', cores{k}, ...
+        'DisplayName', legendas{k});
+end
+
+xlabel('Ordem harmônica n', 'FontSize', 14);
+ylabel('Amplitude [T]',     'FontSize', 14);
+title('Espectro harmônico – 3 Configurações', 'FontSize', 14);
+legend('Location', 'northeast', 'FontSize', 12);
+xlim([0, 50]);
+grid on;
+ax = gca; ax.FontSize = 12;
+hold off;
+
+% Harmônicos de ranhura
+for k = 1:3
+    Y_mag = Y_mag_all{k};
+    fund  = Y_mag(2);
+
+    fprintf('\n=== %s ===\n', legendas{k});
+    fprintf('%-10s %15s %15s\n', 'Harmônica', 'Absoluta [T]', 'Relativa [%]');
+    fprintf('%s\n', repmat('-', 1, 42));
+
+    for M = 1:3
+        for n = [12*M - 1, 12*M + 1]
+            amp_abs = Y_mag(n + 1);
+            amp_rel = 100 * amp_abs / fund;
+            fprintf('%-10d %15.6f %15.2f\n', n, amp_abs, amp_rel);
+        end
+    end
+end
