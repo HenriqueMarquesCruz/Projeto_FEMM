@@ -270,3 +270,49 @@ for k = 1:3
         end
     end
 end
+
+% Comparação da 11a harmonica – Teórico vs FEMM 
+fprintf('\n=== Comparação harmônica 11 – Teórico vs FEMM ===\n');
+fprintf('%-15s %15s %15s %15s\n', 'Configuração', 'Teórico [%]', 'FEMM [%]', 'Diferença [%]');
+fprintf('%s\n', repmat('-', 1, 62));
+
+B_analitico = {B1, B2, B3};
+n_harm = [1:2:50];
+n_harm = n_harm(mod(n_harm,3) ~= 0);
+idx_11 = find(n_harm == 11);
+
+rel_teo_all  = zeros(3,1);
+rel_femm_all = zeros(3,1);
+
+for k = 1:3
+    rel_teo  = 100 * B_analitico{k}(idx_11) / 0.9;
+    Y_mag    = Y_mag_all{k};
+    rel_femm = 100 * Y_mag(12) / Y_mag(2);
+    diff     = rel_femm - rel_teo;
+    rel_teo_all(k)  = rel_teo;
+    rel_femm_all(k) = rel_femm;
+    fprintf('%-15s %15.2f %15.2f %15.2f\n', legendas{k}, rel_teo, rel_femm, diff);
+end
+
+fprintf('%s\n', repmat('-', 1, 62));
+fprintf('%-15s %15.2f %15.2f %15.2f\n', 'Média', mean(rel_teo_all), mean(rel_femm_all), mean(rel_femm_all - rel_teo_all));
+
+% Comparação da fundamental – Teórico vs FEMM 
+fprintf('\n=== Comparação fundamental – Teórico vs FEMM ===\n');
+fprintf('%-15s %15s %15s %15s\n', 'Configuração', 'Teórico [T]', 'FEMM [T]', 'Diferença [T]');
+fprintf('%s\n', repmat('-', 1, 62));
+
+idx_1 = find(n_harm == 1);
+diffs_rel = zeros(3,1);
+
+for k = 1:3
+    amp_teo  = B_analitico{k}(idx_1);
+    Y_mag    = Y_mag_all{k};
+    amp_femm = 2 * Y_mag(2);
+    diff     = amp_femm - amp_teo;
+    diffs_rel(k) = diff / amp_teo;
+    fprintf('%-15s %15.3f %15.3f %15.3f\n', legendas{k}, amp_teo, amp_femm, diff);
+end
+
+fprintf('%s\n', repmat('-', 1, 62));
+fprintf('%-15s %15s %15s %14.2f%%\n', 'Média dif/teo', '', '', 100*mean(diffs_rel));
