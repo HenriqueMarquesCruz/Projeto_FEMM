@@ -125,77 +125,99 @@ fprintf('Ia1 = %.4f A, Ib1 = Ic1 = %.4f\n', Ia1, -Ia1/2)
 fprintf('Ia2 = %.4f A, Ib2 = Ic2 = %.4f\n', Ia2, -Ia2/2)
 fprintf('Ia3 = %.4f A, Ib3 = Ic3 = %.4f\n', Ia3, -Ia3/2)
 
-%% ------- Letra d) - Plot Bn interpolado + FFT -------
-N_interp = 1024;
-N_harm   = 13;
+%% ------- Letra d) - Plot Bn + FFT -------
+% ── 1. Configuracoes ───────────────────────────────────────────────────
+pasta = fullfile(fileparts(mfilename('fullpath')), 'Graficos_FEMM');
 
-nomes = {'Pontos_Bn_Configuracao1', ...
-         'Pontos_Bn_Configuracao2', ...
-         'Pontos_Bn_Configuracao3'};
-cores = {'b', 'r', 'g'};
+arquivos = { ...
+    fullfile(pasta, 'Pontos_Bn_Configuracao1.txt'), ...
+    fullfile(pasta, 'Pontos_Bn_Configuracao2.txt'), ...
+    fullfile(pasta, 'Pontos_Bn_Configuracao3.txt')  ...
+};
 
-% Handles 
-fig_bn  = figure('Name','Campo B_n - Interpolado',               'NumberTitle','off');
-fig_fft = figure('Name','Espectro FFT - Bn (harmônicas 0–13)',   'NumberTitle','off');
+legendas   = {'Configuração 1', 'Configuração 2', 'Configuração 3'};
+cores      = {'b', 'r', 'g'};
+marcadores = {'o', 's', '^'};
+
+% ── 2. Leitura dos dados ───────────────────────────────────────────────
+x_all = cell(3,1);
+B_all = cell(3,1);
 
 for k = 1:3
-    % --- Importação ---
-    filepath = fullfile('Graficos_FEMM', [nomes{k} '.txt']);
-    dados = importdata(filepath, '\t');
-    if isstruct(dados)
-        M = dados.data;
-    else
-        M = dados;
-    end
-    pos_mm = M(:, 1);
-    Bn     = M(:, 2);
-
-    % --- Pré-processamento ---
-    [pos_unique, idx] = unique(pos_mm, 'stable');
-    Bn_unique = Bn(idx);
-
-    [pos_sorted, idx2] = sort(pos_unique);
-    Bn_sorted = Bn_unique(idx2);
-
-    % --- Interpolação uniforme ---
-    pos_uniforme = linspace(pos_sorted(1), pos_sorted(end), N_interp);
-    Bn_interp    = interp1(pos_sorted, Bn_sorted, pos_uniforme, 'pchip');
-
-    % --- Plot Bn ---
-    figure(fig_bn);
-    subplot(3, 1, k);
-    plot(pos_uniforme, Bn_interp, cores{k}, 'LineWidth', 1.2);
-    xlabel('Posição (mm)');
-    ylabel('B_n (T)');
-    title(strrep(nomes{k}, '_', '\_'));
-    grid on;
-
-    % --- FFT ---
-    N_fft = length(Bn_interp);
-    Y     = fft(Bn_interp);
-    amp   = (2/N_fft) * abs(Y(1:N_harm+1));
-    amp(1) = amp(1) / 2;        % DC sem fator 2
-    harmonicas = (0:N_harm)';
-
-    % --- Plot FFT ---
-    figure(fig_fft);
-    subplot(3, 1, k);
-    stem(harmonicas, amp, 'filled', 'Color', cores{k}, 'MarkerSize', 5);
-    xlim([-0.5, N_harm + 0.5]);
-    xticks(0:N_harm);
-    xlabel('Harmônica n');
-    ylabel('Amplitude (T)');
-    title(strrep(nomes{k}, '_', '\_'));
-    grid on;
-
-    % --- Command Window ---
-    fprintf('\n%s\n', nomes{k});
-    fprintf('  n  |  Amplitude (T)\n');
-    fprintf('-----|----------------\n');
-    for nn = 0:N_harm
-        fprintf('  %2d |  %.6f\n', nn, amp(nn+1));
-    end
+    dados     = importdata(arquivos{k}, '\t', 2);   % 2 linhas de cabecalho
+    x_all{k}  = dados.data(:, 1);                   % Posicao [mm]
+    B_all{k}  = dados.data(:, 2);                   % Campo normal Bn [T]
 end
 
-figure(fig_bn);  sgtitle('Campo B_n - Dados Interpolados Uniformemente');
-figure(fig_fft); sgtitle('Espectro de Fourier - Campo B_n (harmônicas 0–13)');
+% ── 3. Figura – Pontos brutos (3 subplots, uma por configuracao) ─────
+figure('Name', ' Bn - 3 Configuracoes', 'NumberTitle', 'off');
+
+for k = 1:3
+    subplot(3, 1, k);
+    plot(x_all{k}, B_all{k}, ...
+        [cores{k}, '-', marcadores{k}], ...
+        'LineWidth', 1.5, 'MarkerSize', 3);
+    xlabel('Posição [mm]', 'FontSize', 14);
+    ylabel('B_n [T]',      'FontSize', 14);
+    title(['B_n – ', legendas{k}], 'FontSize', 14);
+    grid on;
+    ax = gca; ax.FontSize = 12;
+end
+
+%sgtitle('B_n ao longo do entreferro', 'FontSize', 16);
+
+% ── 4. Figura – Espectro harmônico (3 subplots, uma por configuracao)
+figure('Name', 'Espectro Harmônico - 3 Configuracoes', 'NumberTitle', 'off');
+
+for k = 1:3
+    B = B_all{k};
+
+    % Periodo para FFT (1/3 do sinal, assumindo 3 periodos)
+    N        = floor(length(B) / 3);
+    B_period = B(1:N);
+
+    % FFT
+    Y     = fft(B_period);
+    Y_mag = abs(Y) / N;
+
+    % Ordens harmônicas
+    harmonics = 0:(N-1);
+    half      = 1:floor(N/2);
+
+    subplot(3, 1, k);
+    stem(harmonics(half), 2*Y_mag(half), ...
+        'filled', ...
+        'LineWidth', 1.5, ...
+        'Color', cores{k}, ...
+        'MarkerFaceColor', cores{k});
+    xlabel('Ordem harmônica n', 'FontSize', 14);
+    ylabel('Amplitude [T]',     'FontSize', 14);
+    title(['Espectro harmônico – ', legendas{k}], 'FontSize', 14);
+    xlim([0, 50]);
+    grid on;
+    ax = gca; ax.FontSize = 12;
+end
+
+%sgtitle('Espectro harmônico de B_n', 'FontSize', 16);
+
+% ── harmônicos ímpares – amplitude absoluta e relativa ────────────────
+for k = 1:3
+    B = B_all{k};
+    N        = floor(length(B) / 3);
+    B_period = B(1:N);
+
+    Y     = fft(B_period);
+    Y_mag = 2 * abs(Y) / N;   
+
+    fund = Y_mag(2);           % ordem 1 (índice 2 em MATLAB)
+
+    fprintf('\n=== %s ===\n', legendas{k});
+    fprintf('%-10s %15s %15s\n', 'Harmônica', 'Absoluta [T]', 'Relativa [%]');
+    fprintf('%s\n', repmat('-', 1, 42));
+
+    for n = 1:2:13             % ímpares: 1, 3, 5, ... 49
+        amp_abs = Y_mag(n + 1);          % índice n+1 para ordem n
+        amp_rel = 100 * amp_abs / fund;
+        fprintf('%-10d %15.6f %15.2f\n', n, amp_abs, amp_rel);
+    end
+end
